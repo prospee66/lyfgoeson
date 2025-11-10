@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { prayerAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { FaPrayingHands, FaPlus, FaHeart } from 'react-icons/fa';
+import { FaPrayingHands, FaPlus } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
-import useAuthStore from '../../store/authStore';
-
 const Prayers = () => {
   const [prayers, setPrayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +13,6 @@ const Prayers = () => {
     category: 'personal',
     isAnonymous: false
   });
-  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchPrayers();
@@ -45,118 +42,101 @@ const Prayers = () => {
     }
   };
 
-  const handlePray = async (prayerId) => {
-    try {
-      await prayerAPI.prayFor(prayerId);
-      setPrayers(prayers.map(prayer => {
-        if (prayer._id === prayerId) {
-          const hasPrayed = prayer.prayedBy.includes(user.id);
-          return {
-            ...prayer,
-            prayedBy: hasPrayed
-              ? prayer.prayedBy.filter(id => id !== user.id)
-              : [...prayer.prayedBy, user.id]
-          };
-        }
-        return prayer;
-      }));
-      toast.success('Prayer recorded!');
-    } catch (error) {
-      toast.error('Failed to record prayer');
-    }
-  };
-
   if (loading) {
     return <div className="text-center py-12">Loading prayer requests...</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Prayer Requests</h1>
-          <p className="text-gray-600 mt-1">Share your prayer needs and pray for others</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 p-8 shadow-xl">
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FaPrayingHands className="text-3xl text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-white">Prayer Requests</h1>
+            </div>
+            <p className="text-pink-100 text-lg mt-2">
+              Share your prayer needs and uplift others in faith
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-6 py-3 bg-white text-pink-600 rounded-xl font-semibold hover:bg-pink-50 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <FaPlus /> Share Prayer Request
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <FaPlus /> Share Prayer Request
-        </button>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
       </div>
 
       {/* Prayer Requests List */}
-      <div className="space-y-4">
-        {prayers.map((prayer) => {
-          const hasPrayed = prayer.prayedBy.includes(user?.id);
-          const prayerCount = prayer.prayedBy.length;
-
-          return (
-            <div key={prayer._id} className="card hover:shadow-lg transition-shadow">
-              {/* Prayer Header */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0">
-                  {prayer.isAnonymous ? (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white">
-                      <FaPrayingHands />
-                    </div>
-                  ) : (
-                    <img
-                      src={prayer.user?.profilePicture || '/assets/glc-logo.png'}
-                      alt={prayer.user?.firstName || 'User'}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">
-                      {prayer.isAnonymous ? 'Anonymous' : `${prayer.user?.firstName} ${prayer.user?.lastName}`}
-                    </h3>
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
-                      {prayer.category}
-                    </span>
+      <div className="space-y-5">
+        {prayers.map((prayer) => (
+          <div key={prayer._id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 p-6">
+            {/* Prayer Header */}
+            <div className="flex items-start gap-4 mb-5">
+              <div className="flex-shrink-0">
+                {prayer.isAnonymous ? (
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white shadow-lg">
+                    <FaPrayingHands className="text-xl" />
                   </div>
-                  <p className="text-sm text-gray-500">
-                    {formatDistanceToNow(new Date(prayer.createdAt), { addSuffix: true })}
-                  </p>
+                ) : (
+                  <img
+                    src={prayer.user?.profilePicture || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="128"%3E%3Crect width="128" height="128" fill="%23e5e7eb"/%3E%3C/svg%3E'}
+                    alt={prayer.user?.firstName || 'User'}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-pink-200"
+                  />
+                )}
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-gray-900 text-lg">
+                    {prayer.isAnonymous ? 'Anonymous' : `${prayer.user?.firstName} ${prayer.user?.lastName}`}
+                  </h3>
+                  <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-semibold rounded-full capitalize shadow-sm">
+                    {prayer.category}
+                  </span>
                 </div>
-              </div>
-
-              {/* Prayer Content */}
-              <div className="mb-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">{prayer.title}</h4>
-                <p className="text-gray-700 whitespace-pre-wrap">{prayer.description}</p>
-              </div>
-
-              {/* Prayer Actions */}
-              <div className="flex items-center gap-4 pt-4 border-t">
-                <button
-                  onClick={() => handlePray(prayer._id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                    hasPrayed
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-purple-50 hover:text-purple-700'
-                  }`}
-                >
-                  <FaHeart className={hasPrayed ? 'text-white' : 'text-purple-600'} />
-                  {hasPrayed ? 'Prayed' : 'Pray'}
-                </button>
-                <span className="text-sm text-gray-600">
-                  {prayerCount} {prayerCount === 1 ? 'person has' : 'people have'} prayed
-                </span>
+                <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                  {formatDistanceToNow(new Date(prayer.createdAt), { addSuffix: true })}
+                </p>
               </div>
             </div>
-          );
-        })}
+
+            {/* Prayer Content */}
+            <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-5 border border-pink-100">
+              <h4 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <FaPrayingHands className="text-pink-600" />
+                {prayer.title}
+              </h4>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{prayer.description}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {prayers.length === 0 && (
-        <div className="card text-center py-12">
-          <FaPrayingHands className="text-6xl text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No prayer requests yet. Be the first to share!</p>
+        <div className="bg-white rounded-2xl shadow-lg text-center py-20 border border-gray-100">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-100 via-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <FaPrayingHands className="text-5xl text-pink-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No Prayer Requests Yet</h3>
+          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
+            Be the first to share your prayer needs with the community
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-semibold hover:from-pink-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl inline-flex items-center gap-2"
+          >
+            <FaPlus /> Share Your First Prayer
+          </button>
         </div>
       )}
 
@@ -236,7 +216,7 @@ const Prayers = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-semibold hover:from-pink-700 hover:to-purple-700 transition shadow-lg"
                 >
                   Share Request
                 </button>

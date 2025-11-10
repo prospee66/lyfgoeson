@@ -1,0 +1,16 @@
+Run these commands in MongoDB Compass or mongosh:
+
+1. Open MongoDB Compass and connect to: mongodb://localhost:27017
+2. Select the 'church-social' database
+3. Click on 'users' collection
+4. Find your user and click the pencil icon to edit
+5. Change the 'role' field from 'member' to 'admin'
+6. Click 'Update'
+
+OR using mongosh command line:
+
+mongosh
+use church-social
+db.users.updateOne({ email: 'your-email@example.com' }, { : { role: 'admin' } })
+
+Available roles: admin, pastor, sound_engineer, member

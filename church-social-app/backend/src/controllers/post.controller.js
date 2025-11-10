@@ -28,6 +28,13 @@ export const getPosts = async (req, res, next) => {
         populate: { path: 'author', select: 'firstName lastName profilePicture' },
         options: { limit: 3, sort: { createdAt: -1 } }
       })
+      .populate({
+        path: 'sharedPost',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName profilePicture role'
+        }
+      })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ isPinned: -1, createdAt: -1 });
@@ -120,7 +127,7 @@ export const createPost = async (req, res, next) => {
       .populate('author', 'firstName lastName profilePicture role');
 
     // Send notifications to all users about the new post (only for staff posts)
-    if (['admin', 'pastor', 'sound_engineer'].includes(req.user.role)) {
+    if (['pastor', 'sound_engineer'].includes(req.user.role)) {
       try {
         const allUsers = await User.find({ _id: { $ne: req.user.id } }).select('_id');
         const notifications = allUsers.map(user => ({
@@ -182,8 +189,8 @@ export const updatePost = async (req, res, next) => {
       });
     }
 
-    // Make sure user is post owner or admin
-    if (post.author.toString() !== req.user.id && req.user.role !== 'admin') {
+    // Make sure user is post owner or pastor
+    if (post.author.toString() !== req.user.id && req.user.role !== 'pastor') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this post'
@@ -218,8 +225,8 @@ export const deletePost = async (req, res, next) => {
       });
     }
 
-    // Make sure user is post owner or admin
-    if (post.author.toString() !== req.user.id && req.user.role !== 'admin') {
+    // Make sure user is post owner or pastor
+    if (post.author.toString() !== req.user.id && req.user.role !== 'pastor') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this post'
@@ -284,6 +291,15 @@ export const likePost = async (req, res, next) => {
 
     await post.save();
 
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('post-liked', {
+        postId: post._id,
+        likes: post.likes
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: post.likes
@@ -298,36 +314,65 @@ export const likePost = async (req, res, next) => {
 // @access  Private
 export const sharePost = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const originalPost = await Post.findById(req.params.id)
+      .populate('author', 'firstName lastName profilePicture role');
 
-    if (!post) {
+    if (!originalPost) {
       return res.status(404).json({
         success: false,
         message: 'Post not found'
       });
     }
 
-    post.shares.push({
+    // Add to original post's shares array
+    originalPost.shares.push({
       user: req.user.id
     });
+    await originalPost.save();
 
-    await post.save();
+    // Create a new post that references the shared post
+    const sharedPostData = {
+      author: req.user.id,
+      content: `Shared ${originalPost.author.firstName} ${originalPost.author.lastName}'s post`,
+      sharedPost: originalPost._id,
+      postType: originalPost.postType,
+      visibility: originalPost.visibility
+    };
 
-    // Create notification for post author
-    if (post.author.toString() !== req.user.id) {
+    const newSharedPost = await Post.create(sharedPostData);
+
+    const populatedSharedPost = await Post.findById(newSharedPost._id)
+      .populate('author', 'firstName lastName profilePicture role')
+      .populate({
+        path: 'sharedPost',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName profilePicture role'
+        }
+      });
+
+    // Create notification for original post author
+    if (originalPost.author._id.toString() !== req.user.id) {
       await Notification.create({
-        recipient: post.author,
+        recipient: originalPost.author._id,
         sender: req.user.id,
         type: 'share',
         title: 'New Share',
         message: `${req.user.firstName} ${req.user.lastName} shared your post`,
-        relatedPost: post._id
+        relatedPost: originalPost._id
       });
+    }
+
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new-post', populatedSharedPost);
     }
 
     res.status(200).json({
       success: true,
-      message: 'Post shared successfully'
+      message: 'Post shared successfully',
+      data: populatedSharedPost
     });
   } catch (error) {
     next(error);

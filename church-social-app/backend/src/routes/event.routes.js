@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.get('/', protect, getEvents);
 router.get('/:id', protect, getEvent);
-router.post('/', protect, authorize('admin', 'pastor', 'sound_engineer'), uploadMultiple, createEvent);
-router.put('/:id', protect, authorize('admin', 'pastor', 'sound_engineer'), updateEvent);
-router.delete('/:id', protect, authorize('admin', 'pastor'), deleteEvent);
+router.post('/', protect, authorize('pastor', 'sound_engineer'), uploadMultiple, createEvent);
+router.put('/:id', protect, authorize('pastor', 'sound_engineer'), updateEvent);
+router.delete('/:id', protect, authorize('pastor'), deleteEvent);
 router.post('/:id/rsvp', protect, rsvpEvent);
 
 export default router;

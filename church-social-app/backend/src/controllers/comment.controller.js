@@ -44,6 +44,15 @@ export const createComment = async (req, res, next) => {
       });
     }
 
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new-comment', {
+        postId: postId,
+        comment: populatedComment
+      });
+    }
+
     res.status(201).json({ success: true, data: populatedComment });
   } catch (error) {
     next(error);
@@ -58,7 +67,7 @@ export const deleteComment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Comment not found' });
     }
 
-    if (comment.author.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (comment.author.toString() !== req.user.id && req.user.role !== 'pastor') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -66,6 +75,15 @@ export const deleteComment = async (req, res, next) => {
     await Post.findByIdAndUpdate(comment.post, {
       $pull: { comments: comment._id }
     });
+
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('comment-deleted', {
+        postId: comment.post,
+        commentId: req.params.id
+      });
+    }
 
     res.status(200).json({ success: true, message: 'Comment deleted' });
   } catch (error) {

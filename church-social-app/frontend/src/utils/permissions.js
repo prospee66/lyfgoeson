@@ -1,28 +1,34 @@
 // Role-based permission checks
+// Pastors have full admin access
 
 export const canCreateEvent = (user) => {
   if (!user) return false;
-  const allowedRoles = ['admin', 'pastor', 'sound_engineer'];
+  const allowedRoles = ['pastor', 'sound_engineer'];
   return allowedRoles.includes(user.role);
 };
 
 export const canCreateSermon = (user) => {
   if (!user) return false;
-  const allowedRoles = ['admin', 'pastor', 'sound_engineer'];
+  const allowedRoles = ['pastor', 'sound_engineer'];
   return allowedRoles.includes(user.role);
 };
 
 export const canCreateGroup = (user) => {
   if (!user) return false;
-  const allowedRoles = ['admin', 'pastor'];
-  return allowedRoles.includes(user.role);
+  return user.role === 'pastor';
 };
 
 export const canCreatePost = (user) => {
-  // Only staff members can create posts
+  // All authenticated members can create posts
+  return !!user;
+};
+
+export const canDeletePost = (user, post) => {
   if (!user) return false;
-  const allowedRoles = ['admin', 'pastor', 'sound_engineer'];
-  return allowedRoles.includes(user.role);
+  // Pastors can delete any post
+  if (user.role === 'pastor') return true;
+  // Users can delete their own posts
+  return post?.author?._id === user.id || post?.author === user.id;
 };
 
 export const canCreatePrayer = (user) => {
@@ -31,7 +37,8 @@ export const canCreatePrayer = (user) => {
 };
 
 export const isAdmin = (user) => {
-  return user?.role === 'admin';
+  // Pastors are admins now
+  return user?.role === 'pastor';
 };
 
 export const isPastor = (user) => {
@@ -44,5 +51,5 @@ export const isSoundEngineer = (user) => {
 
 export const isStaff = (user) => {
   if (!user) return false;
-  return ['admin', 'pastor', 'sound_engineer'].includes(user.role);
+  return ['pastor', 'sound_engineer'].includes(user.role);
 };

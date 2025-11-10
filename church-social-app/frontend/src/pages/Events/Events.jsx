@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { eventAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { FaCalendar, FaPlus, FaMapMarkerAlt, FaClock, FaCheck, FaTimes, FaImage, FaTrash } from 'react-icons/fa';
+import { FaCalendar, FaPlus, FaMapMarkerAlt, FaClock, FaTimes, FaImage, FaTrash } from 'react-icons/fa';
 import { format } from 'date-fns';
 import useAuthStore from '../../store/authStore';
 import { canCreateEvent } from '../../utils/permissions';
@@ -135,29 +135,6 @@ const Events = () => {
     }
   };
 
-  const handleRSVP = async (eventId, status) => {
-    try {
-      await eventAPI.rsvpEvent(eventId, { status });
-      setEvents(events.map(event => {
-        if (event._id === eventId) {
-          const attendees = event.attendees.filter(a => a.user !== user.id);
-          return {
-            ...event,
-            attendees: [...attendees, { user: user.id, status }]
-          };
-        }
-        return event;
-      }));
-      toast.success(`RSVP updated to ${status}!`);
-    } catch (error) {
-      toast.error('Failed to update RSVP');
-    }
-  };
-
-  const getUserRSVP = (event) => {
-    const rsvp = event.attendees.find(a => a.user === user?.id || a.user?._id === user?.id);
-    return rsvp?.status || null;
-  };
 
   if (loading) {
     return <div className="text-center py-12">Loading events...</div>;
@@ -166,33 +143,41 @@ const Events = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Church Events</h1>
-          <p className="text-gray-600 mt-1">Stay updated with upcoming services and activities</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-600 via-teal-600 to-green-600 p-8 shadow-xl">
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FaCalendar className="text-3xl text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-white">Church Events</h1>
+            </div>
+            <p className="text-green-100 text-lg mt-2">
+              Stay connected with upcoming services and community activities
+            </p>
+          </div>
+          {canCreateEvent(user) && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-white text-green-600 rounded-xl font-semibold hover:bg-green-50 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <FaPlus /> Create Event
+            </button>
+          )}
         </div>
-        {canCreateEvent(user) && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary flex items-center gap-2"
-          >
-            <FaPlus /> Create Event
-          </button>
-        )}
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
       </div>
 
       {/* Events List */}
-      <div className="space-y-4">
-        {events.map((event) => {
-          const userRSVP = getUserRSVP(event);
-          const attendingCount = event.attendees.filter(a => a.status === 'going').length;
-
-          return (
-            <div key={event._id} className="card hover:shadow-xl transition-all">
-              <div className="flex gap-4">
+      <div className="space-y-5">
+        {events.map((event) => (
+            <div key={event._id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1">
+              <div className="flex gap-6 p-6">
                 {/* Left: Image Thumbnail or Date */}
                 {event.media && event.media.length > 0 ? (
-                  <div className="flex-shrink-0 w-36 h-36 relative rounded-lg overflow-hidden bg-gray-100">
+                  <div className="flex-shrink-0 w-40 h-40 relative rounded-xl overflow-hidden shadow-md">
                     {event.media[0].type === 'image' ? (
                       <img
                         src={`http://localhost:5001${event.media[0].url}`}
@@ -206,38 +191,41 @@ const Events = () => {
                       />
                     )}
                     {event.media.length > 1 && (
-                      <div className="absolute bottom-1 right-1 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs">
-                        +{event.media.length - 1}
+                      <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded-lg text-xs font-semibold shadow-lg">
+                        +{event.media.length - 1} more
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="flex-shrink-0 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg p-4 text-center w-28">
-                    <div className="text-4xl font-bold">
+                  <div className="flex-shrink-0 bg-gradient-to-br from-green-600 via-teal-600 to-green-600 text-white rounded-xl p-6 text-center w-32 shadow-lg">
+                    <div className="text-5xl font-bold leading-none mb-1">
                       {format(new Date(event.startDate), 'd')}
                     </div>
-                    <div className="text-sm uppercase font-semibold">
+                    <div className="text-sm uppercase font-semibold tracking-wider">
                       {format(new Date(event.startDate), 'MMM')}
+                    </div>
+                    <div className="text-xs mt-1 opacity-90">
+                      {format(new Date(event.startDate), 'yyyy')}
                     </div>
                   </div>
                 )}
 
                 {/* Right: Event Details */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{event.title}</h3>
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full uppercase">
-                        {event.eventType}
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs font-semibold rounded-full uppercase shadow-sm">
+                        {event.eventType.replace('-', ' ')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       {event.media && event.media.length > 0 && (
-                        <div className="flex-shrink-0 bg-blue-50 text-blue-800 rounded-lg p-2 text-center">
-                          <div className="text-lg font-bold leading-none">
+                        <div className="flex-shrink-0 bg-gradient-to-br from-green-100 to-teal-100 text-green-800 rounded-xl p-3 text-center shadow-sm">
+                          <div className="text-xl font-bold leading-none">
                             {format(new Date(event.startDate), 'd')}
                           </div>
-                          <div className="text-[10px] uppercase font-semibold">
+                          <div className="text-[10px] uppercase font-semibold mt-0.5">
                             {format(new Date(event.startDate), 'MMM')}
                           </div>
                         </div>
@@ -245,7 +233,7 @@ const Events = () => {
                       {canCreateEvent(user) && (
                         <button
                           onClick={() => handleDeleteEvent(event._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all shadow-sm hover:shadow-md"
                           title="Delete event"
                         >
                           <FaTrash />
@@ -254,20 +242,26 @@ const Events = () => {
                     </div>
                   </div>
 
-                <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+                  <p className="text-gray-700 mb-5 line-clamp-2 leading-relaxed">{event.description}</p>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FaClock className="text-blue-600" />
-                      <span>{format(new Date(event.startDate), 'h:mm a')}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-green-100 to-teal-100 rounded-lg">
+                        <FaClock className="text-green-600" />
+                      </div>
+                      <span className="font-semibold text-gray-900">{format(new Date(event.startDate), 'h:mm a')}</span>
+                      <span className="text-gray-500">•</span>
+                      <span className="text-gray-600">{format(new Date(event.startDate), 'EEEE, MMMM d, yyyy')}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FaMapMarkerAlt className="text-blue-600" />
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-green-100 to-teal-100 rounded-lg">
+                        <FaMapMarkerAlt className="text-green-600" />
+                      </div>
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location?.name || event.location)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-green-600 hover:text-green-700 font-semibold hover:underline transition"
                       >
                         {event.location?.name || event.location}
                       </a>
@@ -276,14 +270,26 @@ const Events = () => {
                 </div>
               </div>
             </div>
-          );
-        })}
+        ))}
       </div>
 
       {events.length === 0 && (
-        <div className="card text-center py-12">
-          <FaCalendar className="text-6xl text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No upcoming events. Create the first one!</p>
+        <div className="bg-white rounded-2xl shadow-lg text-center py-20 border border-gray-100">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-100 via-teal-100 to-green-100 flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <FaCalendar className="text-5xl text-green-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No Upcoming Events</h3>
+          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
+            Stay tuned for upcoming services and community activities
+          </p>
+          {canCreateEvent(user) && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl inline-flex items-center gap-2"
+            >
+              <FaPlus /> Create Your First Event
+            </button>
+          )}
         </div>
       )}
 

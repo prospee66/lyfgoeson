@@ -190,21 +190,33 @@ const Sermons = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sermons & Messages</h1>
-          <p className="text-gray-600 mt-1">Watch and listen to past messages</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 p-8 shadow-xl">
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FaVideo className="text-3xl text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-white">Sermons & Messages</h1>
+            </div>
+            <p className="text-blue-100 text-lg mt-2">
+              Watch and listen to inspiring messages from our pastors
+            </p>
+          </div>
+          {canCreateSermon(user) && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <FaPlus /> Upload Sermon
+            </button>
+          )}
         </div>
-        {canCreateSermon(user) && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary flex items-center gap-2"
-          >
-            <FaPlus /> Upload Sermon
-          </button>
-        )}
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
       </div>
 
       {/* Sermons Grid */}
@@ -213,9 +225,9 @@ const Sermons = () => {
           const embedUrl = getEmbedUrl(sermon.youtubeVideoUrl || sermon.videoUrl);
 
           return (
-            <div key={sermon._id} className="card hover:shadow-lg transition-shadow overflow-hidden p-0">
+            <div key={sermon._id} className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1">
               {/* Thumbnail/Video Preview */}
-              <div className="relative bg-gray-900 aspect-video">
+              <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 aspect-video">
                 {embedUrl ? (
                   <img
                     src={`https://img.youtube.com/vi/${embedUrl.split('/').pop()}/maxresdefault.jpg`}
@@ -232,36 +244,40 @@ const Sermons = () => {
                 )}
                 <button
                   onClick={() => setSelectedSermon(sermon)}
-                  className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center hover:bg-opacity-60 transition group"
+                  className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all group"
                 >
-                  <div className="w-16 h-16 rounded-full bg-white bg-opacity-90 flex items-center justify-center group-hover:scale-110 transition">
-                    <FaPlay className="text-2xl text-blue-600 ml-1" />
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 bg-opacity-95 flex items-center justify-center group-hover:scale-110 transition-all shadow-2xl">
+                    <FaPlay className="text-3xl text-white ml-1" />
                   </div>
                 </button>
               </div>
 
               {/* Sermon Info */}
-              <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
+              <div className="p-5">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
                   {sermon.title}
                 </h3>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <FaUser className="text-blue-600" />
-                  <span>{sermon.speaker}</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                    <FaUser className="text-blue-600 text-sm" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">{sermon.speaker}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                  <FaCalendar className="text-blue-600" />
-                  <span>{format(new Date(sermon.date), 'MMMM d, yyyy')}</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-teal-100 flex items-center justify-center">
+                    <FaCalendar className="text-green-600 text-sm" />
+                  </div>
+                  <span className="text-sm text-gray-600">{format(new Date(sermon.date), 'MMM d, yyyy')}</span>
                 </div>
 
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 line-clamp-3 mb-4 leading-relaxed">
                   {sermon.description}
                 </p>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                  <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-semibold rounded-full capitalize">
                     {sermon.category.replace('_', ' ')}
                   </span>
                   {sermon.audioUrl && (
@@ -269,7 +285,7 @@ const Sermons = () => {
                       href={sermon.audioUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-auto text-blue-600 hover:text-blue-800"
+                      className="ml-auto w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-blue-600 hover:from-blue-500 hover:to-purple-500 hover:text-white transition-all shadow-sm hover:shadow-md"
                       title="Download Audio"
                     >
                       <FaDownload />
@@ -283,9 +299,22 @@ const Sermons = () => {
       </div>
 
       {sermons.length === 0 && (
-        <div className="card text-center py-12">
-          <FaVideo className="text-6xl text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No sermons yet. Upload the first one!</p>
+        <div className="bg-white rounded-2xl shadow-lg text-center py-20 border border-gray-100">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 via-purple-100 to-blue-100 flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <FaVideo className="text-5xl text-blue-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No Sermons Yet</h3>
+          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
+            Start building your sermon library by uploading inspiring messages for your community
+          </p>
+          {canCreateSermon(user) && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl inline-flex items-center gap-2"
+            >
+              <FaPlus /> Upload Your First Sermon
+            </button>
+          )}
         </div>
       )}
 

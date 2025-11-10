@@ -9,6 +9,6 @@ router.get('/', protect, getUsers);
 router.get('/:id', protect, getUserById);
 router.put('/:id', protect, uploadProfilePhotos, updateUser);
 router.delete('/:id/profile-picture', protect, deleteProfilePicture);
-router.delete('/:id', protect, authorize('admin'), deleteUser);
+router.delete('/:id', protect, authorize('pastor'), deleteUser);
 
 export default router;

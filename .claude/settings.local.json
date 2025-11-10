@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(if not exist church-social-app mkdir church-social-app)",
+      "Bash(if not exist backend mkdir backend)",
+      "Bash(if not exist frontend mkdir frontend)",
+      "Bash(mkdir:*)",
+      "Bash(ls -la \"c:\\Users\\LIFE GOES ON\\Desktop\\media app\\church-social-app\\frontend\\public\\assets\"\" 2>&1 || dir \"c:UsersLIFE GOES ONDesktopmedia appchurch-social-appfrontendpublicassets\"\")",
+      "Bash(\"c:\\Users\\LIFE GOES ON\\Desktop\\media app\\church-social-app\\frontend\\src\\utils\\permissions.js\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

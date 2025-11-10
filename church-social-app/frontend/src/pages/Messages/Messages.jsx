@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { messageAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { FaPaperPlane, FaSearch, FaUserPlus, FaTimes, FaCircle } from 'react-icons/fa';
+import { FaPaperPlane, FaUserPlus, FaTimes, FaEnvelope } from 'react-icons/fa';
 import { format, formatDistance } from 'date-fns';
 import useAuthStore from '../../store/authStore';
 import socketService from '../../services/socket';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const Messages = () => {
   const [conversations, setConversations] = useState([]);
@@ -19,6 +21,18 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const { user } = useAuthStore();
+
+  // Get profile picture URL
+  const getProfilePictureUrl = (userObj) => {
+    if (!userObj?.profilePicture || userObj.profilePicture === '/assets/glc-logo.png') {
+      // Return a blank gray placeholder
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="128"%3E%3Crect width="128" height="128" fill="%23e5e7eb"/%3E%3C/svg%3E';
+    }
+    if (userObj.profilePicture.includes('ui-avatars') || userObj.profilePicture.startsWith('http')) {
+      return userObj.profilePicture;
+    }
+    return `${API_BASE_URL}${userObj.profilePicture}`;
+  };
 
   useEffect(() => {
     fetchConversations();
@@ -210,29 +224,55 @@ const Messages = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-12rem)]">
-      <div className="flex h-full gap-4">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 p-8 shadow-xl">
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <FaEnvelope className="text-3xl text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-white">Messages</h1>
+            </div>
+            <p className="text-indigo-100 text-lg mt-2">
+              Connect and communicate with your church community
+            </p>
+          </div>
+          <button
+            onClick={() => setShowNewConversation(true)}
+            className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <FaUserPlus /> New Conversation
+          </button>
+        </div>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+      </div>
+
+      <div className="flex h-[calc(100vh-20rem)] gap-6">
         {/* Conversations List */}
-        <div className="w-80 flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-              <button
-                onClick={() => setShowNewConversation(true)}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                title="New conversation"
-              >
-                <FaUserPlus />
-              </button>
+        <div className="w-96 flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"></div>
+                Conversations
+              </h2>
+              <span className="text-sm font-semibold text-gray-500">{conversations.length}</span>
             </div>
           </div>
 
           {/* Conversations */}
           <div className="flex-1 overflow-y-auto">
             {conversations.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <p>No conversations yet.</p>
-                <p className="text-sm mt-2">Start a new conversation!</p>
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
+                  <FaEnvelope className="text-3xl text-indigo-600" />
+                </div>
+                <p className="text-gray-900 font-semibold mb-1">No conversations yet</p>
+                <p className="text-sm text-gray-500">Start a new conversation!</p>
               </div>
             ) : (
               conversations.map(conv => {
@@ -243,25 +283,30 @@ const Messages = () => {
                   <div
                     key={conv._id}
                     onClick={() => setActiveConversation(conv)}
-                    className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                      isActive ? 'bg-blue-50' : ''
+                    className={`p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-l-indigo-600'
+                        : 'hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <img
-                          src={otherUser.profilePicture || `https://ui-avatars.com/api/?name=${otherUser.firstName}+${otherUser.lastName}`}
+                          src={getProfilePictureUrl(otherUser)}
                           alt={`${otherUser.firstName} ${otherUser.lastName}`}
-                          className="w-12 h-12 rounded-full object-cover"
+                          className={`w-14 h-14 rounded-full object-cover border-2 ${
+                            isActive ? 'border-indigo-600' : 'border-gray-200'
+                          }`}
                         />
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                          <h3 className="font-bold text-gray-900 truncate">
                             {otherUser.firstName} {otherUser.lastName}
                           </h3>
                           {conv.lastMessage && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 font-medium">
                               {formatDistance(new Date(conv.updatedAt), new Date(), { addSuffix: true })}
                             </span>
                           )}
@@ -281,25 +326,29 @@ const Messages = () => {
         </div>
 
         {/* Active Conversation */}
-        <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
           {activeConversation ? (
             <>
               {/* Conversation Header */}
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600">
-                <div className="flex items-center gap-3">
+              <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600">
+                <div className="flex items-center gap-4">
                   {(() => {
                     const otherUser = getOtherParticipant(activeConversation);
                     return (
                       <>
-                        <img
-                          src={otherUser.profilePicture || `https://ui-avatars.com/api/?name=${otherUser.firstName}+${otherUser.lastName}`}
-                          alt={`${otherUser.firstName} ${otherUser.lastName}`}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                        />
+                        <div className="relative">
+                          <img
+                            src={getProfilePictureUrl(otherUser)}
+                            alt={`${otherUser.firstName} ${otherUser.lastName}`}
+                            className="w-12 h-12 rounded-full object-cover border-3 border-white shadow-lg"
+                          />
+                          <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
                         <div>
-                          <h2 className="font-bold text-white">
+                          <h2 className="text-lg font-bold text-white">
                             {otherUser.firstName} {otherUser.lastName}
                           </h2>
+                          <p className="text-xs text-indigo-100">Active now</p>
                         </div>
                       </>
                     );
@@ -308,34 +357,34 @@ const Messages = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-br from-gray-50 to-indigo-50/20">
                 {messages.map((message) => {
                   const isOwn = message.sender._id === user.id;
 
                   return (
                     <div
                       key={message._id}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fadeIn`}
                     >
-                      <div className={`flex items-end gap-2 max-w-[70%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`flex items-end gap-3 max-w-[70%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                         {!isOwn && (
                           <img
-                            src={message.sender.profilePicture || `https://ui-avatars.com/api/?name=${message.sender.firstName}+${message.sender.lastName}`}
+                            src={getProfilePictureUrl(message.sender)}
                             alt={`${message.sender.firstName} ${message.sender.lastName}`}
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-md"
                           />
                         )}
                         <div>
                           <div
-                            className={`px-4 py-2 rounded-2xl ${
+                            className={`px-5 py-3 rounded-2xl shadow-md ${
                               isOwn
-                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                                 : 'bg-white text-gray-900 border border-gray-200'
                             }`}
                           >
-                            <p className="break-words">{message.content}</p>
+                            <p className="break-words leading-relaxed">{message.content}</p>
                           </div>
-                          <div className={`text-xs text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                          <div className={`text-xs text-gray-500 mt-1.5 font-medium ${isOwn ? 'text-right' : 'text-left'}`}>
                             {format(new Date(message.createdAt), 'h:mm a')}
                           </div>
                         </div>
@@ -347,11 +396,11 @@ const Messages = () => {
                 {/* Typing Indicator */}
                 {typingUsers.size > 0 && (
                   <div className="flex justify-start">
-                    <div className="bg-white px-4 py-2 rounded-2xl border border-gray-200">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-md">
+                      <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                       </div>
                     </div>
                   </div>
@@ -361,19 +410,19 @@ const Messages = () => {
               </div>
 
               {/* Message Input */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">
-                <div className="flex gap-2">
+              <form onSubmit={handleSendMessage} className="p-5 border-t border-gray-200 bg-white">
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={handleTyping}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                   />
                   <button
                     type="submit"
                     disabled={!newMessage.trim()}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-2"
                   >
                     <FaPaperPlane />
                   </button>
@@ -381,10 +430,13 @@ const Messages = () => {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-indigo-50/20">
               <div className="text-center">
-                <FaSearch className="text-6xl mx-auto mb-4 text-gray-300" />
-                <p className="text-lg">Select a conversation to start messaging</p>
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <FaEnvelope className="text-6xl text-indigo-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Select a Conversation</h3>
+                <p className="text-gray-600 text-lg">Choose a conversation to start messaging</p>
               </div>
             </div>
           )}
@@ -393,54 +445,76 @@ const Messages = () => {
 
       {/* New Conversation Modal */}
       {showNewConversation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">New Conversation</h2>
-              <button
-                onClick={() => {
-                  setShowNewConversation(false);
-                  setSearchQuery('');
-                }}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition"
-              >
-                <FaTimes />
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[85vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
+                    <FaUserPlus className="text-white text-lg" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">New Conversation</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowNewConversation(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-2.5 text-gray-500 hover:bg-white rounded-xl transition-all shadow-sm"
+                >
+                  <FaTimes className="text-lg" />
+                </button>
+              </div>
             </div>
 
-            <div className="mb-4">
+            {/* Search Input */}
+            <div className="p-6 border-b border-gray-200">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search members..."
+                className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                autoFocus
               />
             </div>
 
-            <div className="space-y-2">
+            {/* Users List */}
+            <div className="overflow-y-auto max-h-[50vh] p-4">
               {filteredUsers.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">No users found</p>
-              ) : (
-                filteredUsers.map(u => (
-                  <div
-                    key={u._id}
-                    onClick={() => handleStartConversation(u)}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
-                  >
-                    <img
-                      src={u.profilePicture || `https://ui-avatars.com/api/?name=${u.firstName}+${u.lastName}`}
-                      alt={`${u.firstName} ${u.lastName}`}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {u.firstName} {u.lastName}
-                      </h3>
-                      <p className="text-sm text-gray-600">{u.role}</p>
-                    </div>
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
+                    <FaUserPlus className="text-3xl text-indigo-600" />
                   </div>
-                ))
+                  <p className="text-gray-900 font-semibold mb-1">No users found</p>
+                  <p className="text-sm text-gray-500">Try a different search term</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredUsers.map(u => (
+                    <div
+                      key={u._id}
+                      onClick={() => handleStartConversation(u)}
+                      className="flex items-center gap-4 p-4 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-indigo-200 group"
+                    >
+                      <img
+                        src={getProfilePictureUrl(u)}
+                        alt={`${u.firstName} ${u.lastName}`}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-indigo-600 transition-all shadow-md"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          {u.firstName} {u.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-600 capitalize">{u.role.replace('_', ' ')}</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 group-hover:from-indigo-600 group-hover:to-purple-600 flex items-center justify-center transition-all">
+                        <FaUserPlus className="text-indigo-600 group-hover:text-white transition-colors text-sm" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>

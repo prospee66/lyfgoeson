@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.get('/', protect, getSermons);
 router.get('/:id', protect, getSermon);
-router.post('/', protect, authorize('pastor', 'admin', 'sound_engineer'), uploadMultiple, createSermon);
-router.put('/:id', protect, authorize('pastor', 'admin', 'sound_engineer'), updateSermon);
-router.delete('/:id', protect, authorize('pastor', 'admin'), deleteSermon);
+router.post('/', protect, authorize('pastor', 'sound_engineer'), uploadMultiple, createSermon);
+router.put('/:id', protect, authorize('pastor', 'sound_engineer'), updateSermon);
+router.delete('/:id', protect, authorize('pastor'), deleteSermon);
 router.post('/:id/like', protect, likeSermon);
 router.post('/:id/comment', protect, addComment);
 

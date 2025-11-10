@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { postAPI } from '../../services/api';
+import { postAPI, commentAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { FaHeart, FaComment, FaShare, FaImage, FaYoutube, FaTimes } from 'react-icons/fa';
+import { FaHeart, FaComment, FaImage, FaYoutube, FaTimes, FaPaperPlane, FaTrash } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import useAuthStore from '../../store/authStore';
-import { canCreatePost } from '../../utils/permissions';
+import { canCreatePost, canDeletePost } from '../../utils/permissions';
 import socketService from '../../services/socket';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const Feed = () => {
   const [posts, setPosts] = useState([]);
@@ -15,8 +17,22 @@ const Feed = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
+  const [showCommentsFor, setShowCommentsFor] = useState(null);
+  const [newComment, setNewComment] = useState({});
   const fileInputRef = useRef(null);
   const { user } = useAuthStore();
+
+  // Get profile picture URL
+  const getProfilePictureUrl = (userObj = user) => {
+    if (!userObj?.profilePicture || userObj.profilePicture === '/assets/glc-logo.png') {
+      // Return a blank gray placeholder
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="128"%3E%3Crect width="128" height="128" fill="%23e5e7eb"/%3E%3C/svg%3E';
+    }
+    if (userObj.profilePicture.includes('ui-avatars') || userObj.profilePicture.startsWith('http')) {
+      return userObj.profilePicture;
+    }
+    return `${API_BASE_URL}${userObj.profilePicture}`;
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -30,8 +46,50 @@ const Feed = () => {
       toast.info('A post has been deleted');
     });
 
+    // Listen for new comments
+    socketService.onNewComment(({ postId, comment }) => {
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post._id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, comment]
+          };
+        }
+        return post;
+      }));
+    });
+
+    // Listen for comment deletions
+    socketService.onCommentDeleted(({ postId, commentId }) => {
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post._id === postId) {
+          return {
+            ...post,
+            comments: post.comments.filter(c => c._id !== commentId)
+          };
+        }
+        return post;
+      }));
+    });
+
+    // Listen for likes
+    socketService.onPostLiked(({ postId, likes }) => {
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post._id === postId) {
+          return {
+            ...post,
+            likes: likes
+          };
+        }
+        return post;
+      }));
+    });
+
     return () => {
       socketService.removeListener('post-deleted');
+      socketService.removeListener('new-comment');
+      socketService.removeListener('comment-deleted');
+      socketService.removeListener('post-liked');
     };
   }, [user]);
 
@@ -137,6 +195,54 @@ const Feed = () => {
     }
   };
 
+  const toggleComments = (postId) => {
+    setShowCommentsFor(showCommentsFor === postId ? null : postId);
+  };
+
+  const handleAddComment = async (postId) => {
+    const commentText = newComment[postId]?.trim();
+    if (!commentText) {
+      toast.error('Please enter a comment');
+      return;
+    }
+
+    try {
+      const response = await commentAPI.createComment({
+        postId: postId,
+        content: commentText
+      });
+
+      setPosts(posts.map(post => {
+        if (post._id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, response.data.data]
+          };
+        }
+        return post;
+      }));
+
+      setNewComment({ ...newComment, [postId]: '' });
+      toast.success('Comment added successfully!');
+    } catch (error) {
+      toast.error('Failed to add comment');
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await postAPI.deletePost(postId);
+      setPosts(posts.filter(post => post._id !== postId));
+      toast.success('Post deleted successfully!');
+    } catch (error) {
+      toast.error('Failed to delete post');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -149,26 +255,48 @@ const Feed = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 p-8 shadow-xl">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <FaComment className="text-3xl text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-white">Community Feed</h1>
+          </div>
+          <p className="text-blue-100 text-lg mt-2">
+            Stay connected and share your journey with the community
+          </p>
+        </div>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Feed - Left/Center */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
           {/* Create Post Card - Only for Staff */}
           {canCreatePost(user) && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+              Create a Post
+            </h2>
             <form onSubmit={handleCreatePost} className="space-y-4">
               <div className="flex gap-4">
                 <img
-                  src={user?.profilePicture || '/assets/glc-logo.png'}
+                  src={getProfilePictureUrl()}
                   alt={user?.firstName}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 shadow-md"
                 />
                 <textarea
                   value={newPost}
                   onChange={(e) => setNewPost(e.target.value)}
                   placeholder="Share your thoughts with the community..."
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none bg-gray-50 hover:bg-white"
-                  rows="3"
+                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none bg-gray-50 hover:bg-white"
+                  rows="4"
                 />
               </div>
 
@@ -241,7 +369,7 @@ const Feed = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
@@ -254,7 +382,7 @@ const Feed = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:bg-blue-50 rounded-xl transition-all font-semibold border border-gray-200 hover:border-blue-200"
                   >
                     <FaImage className="text-blue-500" />
                     <span>Gallery</span>
@@ -262,7 +390,7 @@ const Feed = () => {
                   <button
                     type="button"
                     onClick={() => setShowYoutubeInput(!showYoutubeInput)}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:bg-red-50 rounded-xl transition-all font-semibold border border-gray-200 hover:border-red-200"
                   >
                     <FaYoutube className="text-red-500" />
                     <span>YouTube</span>
@@ -271,7 +399,7 @@ const Feed = () => {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creating ? 'Posting...' : 'Post'}
                 </button>
@@ -281,31 +409,41 @@ const Feed = () => {
           )}
 
           {/* Posts List */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {posts.map((post) => (
-              <div key={post._id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div key={post._id} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                 {/* Post Header */}
                 <div className="p-6 pb-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <img
-                      src={post.author.profilePicture || '/assets/glc-logo.png'}
+                      src={getProfilePictureUrl(post.author)}
                       alt={post.author.firstName}
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
+                      className="w-14 h-14 rounded-full object-cover border-2 border-blue-200 shadow-md"
                     />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-bold text-gray-900 text-lg">
                         {post.author.firstName} {post.author.lastName}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
                         {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                       </p>
                     </div>
+                    {canDeletePost(user, post) && (
+                      <button
+                        onClick={() => handleDeletePost(post._id)}
+                        className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all shadow-sm hover:shadow-md"
+                        title="Delete post"
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Post Content */}
-                <div className="px-6 pb-4">
-                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                <div className="px-6 pb-5">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">{post.content}</p>
                 </div>
 
                 {/* Post Media */}
@@ -346,77 +484,143 @@ const Feed = () => {
                 )}
 
                 {/* Post Stats */}
-                <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100">
-                  <span className="text-sm font-medium text-gray-600">
-                    {post.likes.length} {post.likes.length === 1 ? 'like' : 'likes'}
-                  </span>
-                  <span className="text-sm font-medium text-gray-600">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-sm">
+                      <FaHeart className="text-white text-xs" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {post.likes.length} {post.likes.length === 1 ? 'like' : 'likes'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">
                     {post.comments.length} {post.comments.length === 1 ? 'comment' : 'comments'}
                   </span>
                 </div>
 
                 {/* Post Actions */}
-                <div className="grid grid-cols-3 border-t border-gray-100">
+                <div className="grid grid-cols-2 border-t border-gray-100">
                   <button
                     onClick={() => handleLike(post._id)}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 font-medium transition-all ${
+                    className={`flex items-center justify-center gap-2 px-4 py-3.5 font-semibold transition-all ${
                       post.likes.includes(user?.id)
-                        ? 'text-red-500 hover:bg-red-50'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'text-blue-600 hover:bg-blue-50'
+                        : 'text-gray-600 hover:bg-blue-50'
                     }`}
                   >
                     <FaHeart className={post.likes.includes(user?.id) ? 'fill-current' : ''} />
                     <span>Like</span>
                   </button>
-                  <button className="flex items-center justify-center gap-2 px-4 py-3 text-gray-600 hover:bg-gray-50 font-medium transition-all border-l border-r border-gray-100">
+                  <button
+                    onClick={() => toggleComments(post._id)}
+                    className="flex items-center justify-center gap-2 px-4 py-3.5 text-gray-600 hover:bg-blue-50 font-semibold transition-all border-l border-gray-100"
+                  >
                     <FaComment />
                     <span>Comment</span>
                   </button>
-                  <button className="flex items-center justify-center gap-2 px-4 py-3 text-gray-600 hover:bg-gray-50 font-medium transition-all">
-                    <FaShare />
-                    <span>Share</span>
-                  </button>
                 </div>
+
+                {/* Comments Section */}
+                {showCommentsFor === post._id && (
+                  <div className="border-t border-gray-100 bg-gray-50">
+                    {/* Comments List */}
+                    {post.comments && post.comments.length > 0 && (
+                      <div className="px-6 py-4 space-y-4 max-h-96 overflow-y-auto">
+                        {post.comments.map((comment) => (
+                          <div key={comment._id} className="flex gap-3">
+                            <img
+                              src={getProfilePictureUrl(comment.user)}
+                              alt={comment.user?.firstName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 flex-shrink-0"
+                            />
+                            <div className="flex-1">
+                              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+                                <p className="font-semibold text-gray-900 text-sm mb-1">
+                                  {comment.user?.firstName} {comment.user?.lastName}
+                                </p>
+                                <p className="text-gray-800 text-sm leading-relaxed">{comment.content}</p>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1 ml-4">
+                                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add Comment Input */}
+                    <div className="px-6 py-4 border-t border-gray-200">
+                      <div className="flex gap-3">
+                        <img
+                          src={getProfilePictureUrl()}
+                          alt={user?.firstName}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 flex-shrink-0"
+                        />
+                        <div className="flex-1 flex gap-2">
+                          <input
+                            type="text"
+                            value={newComment[post._id] || ''}
+                            onChange={(e) => setNewComment({ ...newComment, [post._id]: e.target.value })}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleAddComment(post._id);
+                              }
+                            }}
+                            placeholder="Write a comment..."
+                            className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                          />
+                          <button
+                            onClick={() => handleAddComment(post._id)}
+                            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                          >
+                            <FaPaperPlane />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
           {posts.length === 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="max-w-sm mx-auto">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaComment className="text-3xl text-gray-400" />
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-20 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 via-purple-100 to-blue-100 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <FaComment className="text-5xl text-blue-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No posts yet</h3>
-                <p className="text-gray-500">Be the first to share something with the community!</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">No Posts Yet</h3>
+                <p className="text-gray-600 text-lg">Be the first to share something with the community!</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Sidebar - Right */}
-        <div className="hidden lg:block space-y-4">
+        <div className="hidden lg:block space-y-6">
           {/* Profile Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
             <div className="text-center">
               <img
-                src={user?.profilePicture || '/assets/glc-logo.png'}
+                src={getProfilePictureUrl()}
                 alt={user?.firstName}
-                className="w-20 h-20 rounded-full object-cover mx-auto mb-4 ring-4 ring-gray-100"
+                className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-blue-200 shadow-lg"
               />
               <h3 className="font-bold text-gray-900 text-lg">
                 {user?.firstName} {user?.lastName}
               </h3>
-              <p className="text-sm text-gray-500 capitalize mb-4">{user?.role || 'member'}</p>
+              <p className="text-sm font-semibold text-blue-600 capitalize mb-4">{user?.role || 'member'}</p>
               <div className="pt-4 border-t border-gray-100">
                 <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50">
                     <p className="text-2xl font-bold text-gray-900">0</p>
-                    <p className="text-xs text-gray-500">Posts</p>
+                    <p className="text-xs text-gray-600 font-semibold">Posts</p>
                   </div>
-                  <div>
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50">
                     <p className="text-2xl font-bold text-gray-900">0</p>
-                    <p className="text-xs text-gray-500">Following</p>
+                    <p className="text-xs text-gray-600 font-semibold">Following</p>
                   </div>
                 </div>
               </div>
@@ -424,39 +628,37 @@ const Feed = () => {
           </div>
 
           {/* Quick Links */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Quick Links</h3>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+              Quick Links
+            </h3>
             <div className="space-y-3">
-              <a href="/events" className="flex items-center gap-3 text-gray-700 hover:text-gray-900 transition-colors">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600">📅</span>
+              <a href="/events" className="flex items-center gap-3 p-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all group">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center group-hover:from-blue-600 group-hover:to-purple-600 transition-all shadow-sm">
+                  <span className="text-lg group-hover:scale-110 transition-transform">📅</span>
                 </div>
-                <span className="font-medium">Events</span>
+                <span className="font-semibold group-hover:text-blue-600 transition-colors">Events</span>
               </a>
-              <a href="/sermons" className="flex items-center gap-3 text-gray-700 hover:text-gray-900 transition-colors">
-                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                  <span className="text-purple-600">🎙️</span>
+              <a href="/sermons" className="flex items-center gap-3 p-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all group">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center group-hover:from-blue-600 group-hover:to-purple-600 transition-all shadow-sm">
+                  <span className="text-lg group-hover:scale-110 transition-transform">🎙️</span>
                 </div>
-                <span className="font-medium">Sermons</span>
-              </a>
-              <a href="/groups" className="flex items-center gap-3 text-gray-700 hover:text-gray-900 transition-colors">
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600">👥</span>
-                </div>
-                <span className="font-medium">Groups</span>
+                <span className="font-semibold group-hover:text-blue-600 transition-colors">Sermons</span>
               </a>
             </div>
           </div>
 
           {/* Community Info */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-6">
+          <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 rounded-2xl border border-blue-200 p-6 shadow-lg">
             <h3 className="font-bold text-gray-900 mb-2">Welcome to Global Life!</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-700 leading-relaxed">
               Connect, share, and grow together with our community.
             </p>
           </div>
         </div>
       </div>
+
     </div>
   );
 };

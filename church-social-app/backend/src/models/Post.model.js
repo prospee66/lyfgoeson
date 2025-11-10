@@ -54,6 +54,11 @@ const postSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  sharedPost: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
+    default: null
+  },
   isPinned: {
     type: Boolean,
     default: false

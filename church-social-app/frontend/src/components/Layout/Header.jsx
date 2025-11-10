@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaUsers, FaCalendar } from 'react-icons/fa';
+import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaCalendar } from 'react-icons/fa';
 import useAuthStore from '../../store/authStore';
 import { useState, useEffect, useRef } from 'react';
-import { userAPI, groupAPI, eventAPI } from '../../services/api';
+import { userAPI, eventAPI } from '../../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -18,8 +18,9 @@ const Header = () => {
 
   // Get profile picture URL
   const getProfilePictureUrl = () => {
-    if (!user?.profilePicture) {
-      return `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName || ''}&size=128`;
+    if (!user?.profilePicture || user.profilePicture === '/assets/glc-logo.png') {
+      // Return a blank gray placeholder
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="128"%3E%3Crect width="128" height="128" fill="%23e5e7eb"/%3E%3C/svg%3E';
     }
     if (user.profilePicture.includes('ui-avatars') || user.profilePicture.startsWith('http')) {
       return user.profilePicture;
@@ -33,11 +34,10 @@ const Header = () => {
       if (searchQuery.trim()) {
         setSearchLoading(true);
         try {
-          // Search across users, groups, and events in parallel
-          const [usersResponse, groupsResponse, eventsResponse] = await Promise.allSettled([
-            userAPI.getUsers({ search: searchQuery, limit: 3 }),
-            groupAPI.getGroups({ search: searchQuery, limit: 3 }),
-            eventAPI.getEvents({ search: searchQuery, limit: 3 })
+          // Search across users and events in parallel
+          const [usersResponse, eventsResponse] = await Promise.allSettled([
+            userAPI.getUsers({ search: searchQuery, limit: 5 }),
+            eventAPI.getEvents({ search: searchQuery, limit: 5 })
           ]);
 
           const results = [];
@@ -46,13 +46,6 @@ const Header = () => {
           if (usersResponse.status === 'fulfilled' && usersResponse.value?.data?.data) {
             usersResponse.value.data.data.forEach(user => {
               results.push({ ...user, type: 'user' });
-            });
-          }
-
-          // Add groups to results
-          if (groupsResponse.status === 'fulfilled' && groupsResponse.value?.data?.data) {
-            groupsResponse.value.data.data.forEach(group => {
-              results.push({ ...group, type: 'group' });
             });
           }
 
@@ -95,8 +88,6 @@ const Header = () => {
   const handleSearchSelect = (result) => {
     if (result.type === 'user') {
       navigate(`/profile/${result._id}`);
-    } else if (result.type === 'group') {
-      navigate(`/groups/${result._id}`);
     } else if (result.type === 'event') {
       navigate(`/events/${result._id}`);
     }
@@ -111,33 +102,38 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 h-16">
+    <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 shadow-lg z-50 h-16">
       <div className="flex items-center justify-between px-6 h-full">
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3">
-          <img
-            src="/assets/glc-logo.png"
-            alt="Global Life Church"
-            className="h-12 w-12 object-contain"
-          />
-          <span className="text-xl font-bold text-gray-900">Global Life Church</span>
+        <Link to="/" className="flex items-center space-x-3 group">
+          <div className="relative">
+            <img
+              src="/assets/glc-logo.png"
+              alt="Global Life Church"
+              className="h-12 w-12 object-contain rounded-full bg-white p-1 shadow-md group-hover:scale-110 transition-transform duration-200"
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-bold text-white tracking-tight">Global Life Church</span>
+            <span className="text-xs text-blue-100 -mt-1">Connect • Grow • Serve</span>
+          </div>
         </Link>
 
         {/* Search Bar */}
         <div className="flex-1 max-w-xl mx-8" ref={searchRef}>
           <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search members, groups, events..."
-              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+              placeholder="Search members, events..."
+              className="w-full pl-10 pr-10 py-2.5 bg-white/90 backdrop-blur-sm border-2 border-white/50 rounded-xl focus:bg-white focus:border-white focus:ring-2 focus:ring-white/30 transition-all placeholder-gray-500"
             />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <FaTimes />
               </button>
@@ -183,21 +179,6 @@ const Header = () => {
                             </div>
                             <FaUserCircle className="text-gray-400 text-lg" />
                           </>
-                        ) : result.type === 'group' ? (
-                          <>
-                            <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-                              <FaUsers className="text-primary-600 text-lg" />
-                            </div>
-                            <div className="flex-1 text-left">
-                              <div className="font-medium text-gray-900">
-                                {result.name}
-                              </div>
-                              <div className="text-sm text-gray-500 capitalize">
-                                {result.groupType || 'Group'}
-                              </div>
-                            </div>
-                            <FaUsers className="text-gray-400 text-lg" />
-                          </>
                         ) : result.type === 'event' ? (
                           <>
                             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -228,29 +209,27 @@ const Header = () => {
         </div>
 
         {/* Right side icons */}
-        <div className="flex items-center space-x-4">
-          <Link to="/messages" className="relative p-2 text-gray-600 hover:text-primary-600 transition">
+        <div className="flex items-center space-x-2">
+          <Link to="/messages" className="relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
             <FaEnvelope className="text-xl" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
           </Link>
 
-          <Link to="/notifications" className="relative p-2 text-gray-600 hover:text-primary-600 transition">
+          <Link to="/notifications" className="relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
             <FaBell className="text-xl" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
           </Link>
 
           {/* Profile Dropdown */}
-          <div className="relative">
+          <div className="relative ml-2">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
+              className="flex items-center space-x-2 p-1.5 pr-3 rounded-lg hover:bg-white/20 transition-all"
             >
               <img
                 src={getProfilePictureUrl()}
                 alt={user?.firstName || 'User'}
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-white/50"
               />
-              <span className="font-medium text-gray-700">{user?.firstName}</span>
+              <span className="font-semibold text-white">{user?.firstName}</span>
             </button>
 
             {showProfileMenu && (

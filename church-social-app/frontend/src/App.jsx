@@ -14,8 +14,6 @@ import Home from './pages/Home/Home';
 import Feed from './pages/Feed/Feed';
 import Events from './pages/Events/Events';
 import EventDetails from './pages/Events/EventDetails';
-import Groups from './pages/Groups/Groups';
-import GroupDetails from './pages/Groups/GroupDetails';
 import Prayers from './pages/Prayers/Prayers';
 import Sermons from './pages/Sermons/Sermons';
 import SermonDetails from './pages/Sermons/SermonDetails';
@@ -57,8 +55,6 @@ function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetails />} />
-        <Route path="/groups" element={<Groups />} />
-        <Route path="/groups/:id" element={<GroupDetails />} />
         <Route path="/prayers" element={<Prayers />} />
         <Route path="/sermons" element={<Sermons />} />
         <Route path="/sermons/:id" element={<SermonDetails />} />

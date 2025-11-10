@@ -42,9 +42,17 @@ const Profile = () => {
     fetchUser();
   }, [id, currentUser, isOwnProfile]);
 
+  // Keep local user state in sync with global currentUser when viewing own profile
+  useEffect(() => {
+    if (isOwnProfile && currentUser) {
+      setUser(currentUser);
+    }
+  }, [currentUser, isOwnProfile]);
+
   const getProfilePictureUrl = () => {
-    if (!user?.profilePicture) {
-      return `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName || ''}&size=300&background=random`;
+    if (!user?.profilePicture || user.profilePicture === '/assets/glc-logo.png') {
+      // Return a blank gray placeholder
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300"%3E%3Crect width="300" height="300" fill="%23e5e7eb"/%3E%3C/svg%3E';
     }
     if (user.profilePicture.includes('ui-avatars') || user.profilePicture.startsWith('http')) {
       return user.profilePicture;

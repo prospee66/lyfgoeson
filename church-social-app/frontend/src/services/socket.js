@@ -109,6 +109,26 @@ class SocketService {
     }
   }
 
+  // Comment events
+  onNewComment(callback) {
+    if (this.socket) {
+      this.socket.on('new-comment', callback);
+    }
+  }
+
+  onCommentDeleted(callback) {
+    if (this.socket) {
+      this.socket.on('comment-deleted', callback);
+    }
+  }
+
+  // Like events
+  onPostLiked(callback) {
+    if (this.socket) {
+      this.socket.on('post-liked', callback);
+    }
+  }
+
   // Deletion events
   onPostDeleted(callback) {
     if (this.socket) {
