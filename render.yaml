@@ -1,7 +1,7 @@
 services:
   # Backend API
   - type: web
-    name: church-app-backend
+    name: lifegoes-backend
     runtime: node
     env: node
     rootDir: church-social-app/backend
@@ -17,12 +17,12 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://church-app-frontend.onrender.com
-    healthCheckPath: /api/health
+        # Update this after frontend deployment with actual URL
+        sync: false
 
   # Frontend
   - type: web
-    name: church-app-frontend
+    name: lifegoes-frontend
     runtime: static
     env: static
     rootDir: church-social-app/frontend
@@ -30,6 +30,8 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://church-app-backend.onrender.com/api
+        # Update this after backend deployment with actual URL + /api
+        sync: false
       - key: VITE_SOCKET_URL
-        value: https://church-app-backend.onrender.com
+        # Update this after backend deployment with actual URL
+        sync: false
