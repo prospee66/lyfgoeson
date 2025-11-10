@@ -1,0 +1,35 @@
+services:
+  # Backend API
+  - type: web
+    name: church-app-backend
+    runtime: node
+    env: node
+    rootDir: church-social-app/backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://church-app-frontend.onrender.com
+    healthCheckPath: /api/health
+
+  # Frontend
+  - type: web
+    name: church-app-frontend
+    runtime: static
+    env: static
+    rootDir: church-social-app/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://church-app-backend.onrender.com/api
+      - key: VITE_SOCKET_URL
+        value: https://church-app-backend.onrender.com
