@@ -26,8 +26,8 @@ services:
     runtime: static
     env: static
     rootDir: church-social-app/frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    buildCommand: cd church-social-app/frontend && npm install && npm run build
+    staticPublishPath: church-social-app/frontend/dist
     envVars:
       - key: VITE_API_URL
         # Update this after backend deployment with actual URL + /api
