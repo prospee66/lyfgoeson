@@ -21,11 +21,8 @@ services:
         sync: false
 
   # Frontend
-  - type: web
+  - type: static
     name: lifegoes-frontend
-    runtime: static
-    env: static
-    rootDir: church-social-app/frontend
     buildCommand: cd church-social-app/frontend && npm install && npm run build
     staticPublishPath: church-social-app/frontend/dist
     envVars:
