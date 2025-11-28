@@ -11,14 +11,13 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://churchadmin:9bIthTwct7Zzsvw5@churchapp.habdchf.mongodb.net/churchapp?appName=ChurchApp
       - key: JWT_SECRET
-        sync: false
+        value: a66420d39e24d5cd39dbd04d05aaeba35b2cb14a735941cb1aef712f5a171087
       - key: FRONTEND_URL
-        # Update this after frontend deployment with actual URL
-        sync: false
+        value: https://placeholder.com
 
   # Frontend (Static Site)
   - type: web
