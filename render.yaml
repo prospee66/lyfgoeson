@@ -1,7 +1,7 @@
 services:
   # Backend API
   - type: web
-    name: lifegoes-backend
+    name: lyfgoeson-backend
     runtime: node
     env: node
     rootDir: church-social-app/backend
@@ -22,7 +22,7 @@ services:
 
   # Frontend
   - type: static
-    name: lifegoes-frontend
+    name: lyfgoeson-frontend
     buildCommand: cd church-social-app/frontend && npm install && npm run build
     staticPublishPath: church-social-app/frontend/dist
     envVars:
