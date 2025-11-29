@@ -1,16 +1,23 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaNewspaper, FaCalendar, FaPrayingHands, FaVideo, FaEnvelope, FaUserFriends } from 'react-icons/fa';
+import { FaHome, FaNewspaper, FaCalendar, FaPrayingHands, FaVideo, FaEnvelope, FaUserFriends, FaBroadcastTower } from 'react-icons/fa';
+import useAuthStore from '../../store/authStore';
 
 const Sidebar = () => {
-  const navItems = [
-    { path: '/', icon: FaHome, label: 'Home', color: 'text-blue-600' },
-    { path: '/feed', icon: FaNewspaper, label: 'Feed', color: 'text-purple-600' },
-    { path: '/events', icon: FaCalendar, label: 'Events', color: 'text-green-600' },
-    { path: '/prayers', icon: FaPrayingHands, label: 'Prayers', color: 'text-pink-600' },
-    { path: '/sermons', icon: FaVideo, label: 'Sermons', color: 'text-red-600' },
-    { path: '/messages', icon: FaEnvelope, label: 'Messages', color: 'text-indigo-600' },
-    { path: '/members', icon: FaUserFriends, label: 'Members', color: 'text-teal-600' }
+  const { user } = useAuthStore();
+
+  const allNavItems = [
+    { path: '/', icon: FaHome, label: 'Home', color: 'text-blue-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/feed', icon: FaNewspaper, label: 'Feed', color: 'text-purple-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/live', icon: FaBroadcastTower, label: 'Live Stream', color: 'text-red-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/events', icon: FaCalendar, label: 'Events', color: 'text-green-600', roles: ['pastor', 'sound_engineer'] },
+    { path: '/prayers', icon: FaPrayingHands, label: 'Prayers', color: 'text-pink-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/sermons', icon: FaVideo, label: 'Sermons', color: 'text-orange-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/messages', icon: FaEnvelope, label: 'Messages', color: 'text-indigo-600', roles: ['member', 'pastor', 'sound_engineer'] },
+    { path: '/members', icon: FaUserFriends, label: 'Members', color: 'text-teal-600', roles: ['pastor', 'sound_engineer'] }
   ];
+
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => item.roles.includes(user?.role));
 
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 shadow-sm z-40">

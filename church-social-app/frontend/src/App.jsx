@@ -6,10 +6,12 @@ import socketService from './services/socket';
 // Layout
 import Layout from './components/Layout/Layout';
 import PrivateRoute from './components/Auth/PrivateRoute';
+import RoleBasedRoute from './components/Auth/RoleBasedRoute';
 
 // Pages
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
 import Home from './pages/Home/Home';
 import Feed from './pages/Feed/Feed';
 import Events from './pages/Events/Events';
@@ -17,6 +19,7 @@ import EventDetails from './pages/Events/EventDetails';
 import Prayers from './pages/Prayers/Prayers';
 import Sermons from './pages/Sermons/Sermons';
 import SermonDetails from './pages/Sermons/SermonDetails';
+import LiveStream from './pages/LiveStream/LiveStream';
 import Messages from './pages/Messages/Messages';
 import Profile from './pages/Profile/Profile';
 import Members from './pages/Members/Members';
@@ -48,22 +51,57 @@ function App() {
         path="/register"
         element={!isAuthenticated ? <Register /> : <Navigate to="/feed" />}
       />
+      <Route
+        path="/forgot-password"
+        element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/feed" />}
+      />
 
-      {/* Private Routes */}
+      {/* Private Routes - Basic access for all authenticated users */}
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path="/" element={<Home />} />
         <Route path="/feed" element={<Feed />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/events/:id" element={<EventDetails />} />
+        <Route path="/live" element={<LiveStream />} />
         <Route path="/prayers" element={<Prayers />} />
         <Route path="/sermons" element={<Sermons />} />
         <Route path="/sermons/:id" element={<SermonDetails />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:conversationId" element={<Messages />} />
         <Route path="/profile/:id" element={<Profile />} />
-        <Route path="/members" element={<Members />} />
         <Route path="/notifications" element={<Notifications />} />
-        <Route path="/settings" element={<Settings />} />
+
+        {/* Protected Routes - Only for Pastors and Sound Engineers */}
+        <Route
+          path="/events"
+          element={
+            <RoleBasedRoute allowedRoles={['pastor', 'sound_engineer']}>
+              <Events />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/events/:id"
+          element={
+            <RoleBasedRoute allowedRoles={['pastor', 'sound_engineer']}>
+              <EventDetails />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/members"
+          element={
+            <RoleBasedRoute allowedRoles={['pastor', 'sound_engineer']}>
+              <Members />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RoleBasedRoute allowedRoles={['pastor', 'sound_engineer']}>
+              <Settings />
+            </RoleBasedRoute>
+          }
+        />
       </Route>
 
       {/* 404 */}

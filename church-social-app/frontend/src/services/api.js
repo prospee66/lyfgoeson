@@ -45,7 +45,9 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
-  logout: () => api.post('/auth/logout')
+  logout: () => api.post('/auth/logout'),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data)
 };
 
 // User API
@@ -134,6 +136,19 @@ export const notificationAPI = {
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
   markAllAsRead: () => api.put('/notifications/read-all'),
   deleteNotification: (id) => api.delete(`/notifications/${id}`)
+};
+
+// Live Stream API
+export const liveStreamAPI = {
+  getLiveStreams: (params) => api.get('/live-streams', { params }),
+  getLiveStream: (id) => api.get(`/live-streams/${id}`),
+  getCurrentLiveStream: () => api.get('/live-streams/current'),
+  createLiveStream: (data) => api.post('/live-streams', data),
+  updateLiveStream: (id, data) => api.put(`/live-streams/${id}`, data),
+  startLiveStream: (id) => api.post(`/live-streams/${id}/start`),
+  endLiveStream: (id) => api.post(`/live-streams/${id}/end`),
+  joinLiveStream: (id) => api.post(`/live-streams/${id}/join`),
+  deleteLiveStream: (id) => api.delete(`/live-streams/${id}`)
 };
 
 export default api;
