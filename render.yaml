@@ -27,8 +27,6 @@ services:
     staticPublishPath: church-social-app/frontend/dist
     envVars:
       - key: VITE_API_URL
-        # Update this after backend deployment with actual URL + /api
-        sync: false
+        value: https://lyfgoeson-backend.onrender.com/api
       - key: VITE_SOCKET_URL
-        # Update this after backend deployment with actual URL
-        sync: false
+        value: https://lyfgoeson-backend.onrender.com
