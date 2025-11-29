@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaNewspaper, FaCalendar, FaPrayingHands, FaVideo, FaEnvelope, FaUserFriends, FaBroadcastTower, FaTimes } from 'react-icons/fa';
+import { FaHome, FaNewspaper, FaCalendar, FaPrayingHands, FaVideo, FaEnvelope, FaUserFriends, FaBroadcastTower } from 'react-icons/fa';
 import useAuthStore from '../../store/authStore';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = () => {
   const { user } = useAuthStore();
 
   const allNavItems = [
@@ -20,18 +20,10 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navItems = allNavItems.filter(item => item.roles.includes(user?.role));
 
   return (
-    <aside className={`fixed left-0 top-16 bottom-0 w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 shadow-sm z-40 transition-transform duration-300 lg:translate-x-0 ${
-      isOpen ? 'translate-x-0' : '-translate-x-full'
-    }`}>
+    <aside className="hidden lg:block fixed left-0 top-16 bottom-0 w-64 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 shadow-sm z-40">
       {/* Sidebar Header */}
-      <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-gray-200">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Navigation</h2>
-        <button
-          onClick={onClose}
-          className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <FaTimes className="text-lg" />
-        </button>
       </div>
 
       {/* Navigation Items */}
@@ -41,7 +33,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             key={item.path}
             to={item.path}
             end={item.path === '/'}
-            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative ${
                 isActive

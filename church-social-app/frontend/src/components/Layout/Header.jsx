@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaCalendar, FaBars } from 'react-icons/fa';
+import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaCalendar } from 'react-icons/fa';
 import useAuthStore from '../../store/authStore';
 import { useState, useEffect, useRef } from 'react';
 import { userAPI, eventAPI } from '../../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
-const Header = ({ toggleSidebar }) => {
+const Header = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -104,14 +104,6 @@ const Header = ({ toggleSidebar }) => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 shadow-lg z-50 h-16">
       <div className="flex items-center justify-between px-3 sm:px-6 h-full">
-        {/* Mobile menu button */}
-        <button
-          onClick={toggleSidebar}
-          className="lg:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-colors mr-2"
-        >
-          <FaBars className="text-xl" />
-        </button>
-
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
           <div className="relative">
@@ -122,7 +114,7 @@ const Header = ({ toggleSidebar }) => {
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-base sm:text-xl font-bold text-white tracking-tight">Global Life Church</span>
+            <span className="text-sm sm:text-xl font-bold text-white tracking-tight line-clamp-1">Global Life Church</span>
             <span className="text-xs text-blue-100 -mt-1 hidden sm:block">Connect • Grow • Serve</span>
           </div>
         </Link>
