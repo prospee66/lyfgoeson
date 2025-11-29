@@ -14,6 +14,7 @@ import prayerRoutes from './src/routes/prayer.routes.js';
 import sermonRoutes from './src/routes/sermon.routes.js';
 import messageRoutes from './src/routes/message.routes.js';
 import notificationRoutes from './src/routes/notification.routes.js';
+import liveStreamRoutes from './src/routes/liveStream.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 import { setupSocketIO } from './src/socket/socket.js';
 
@@ -32,7 +33,10 @@ const io = new Server(httpServer, {
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -56,6 +60,7 @@ app.use('/api/prayers', prayerRoutes);
 app.use('/api/sermons', sermonRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/live-streams', liveStreamRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

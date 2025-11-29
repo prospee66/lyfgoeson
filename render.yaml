@@ -16,6 +16,8 @@ services:
         value: mongodb+srv://churchadmin:9bIthTwct7Zzsvw5@churchapp.habdchf.mongodb.net/churchapp?appName=ChurchApp
       - key: JWT_SECRET
         value: a66420d39e24d5cd39dbd04d05aaeba35b2cb14a735941cb1aef712f5a171087
+      - key: JWT_EXPIRE
+        value: 30d
       - key: FRONTEND_URL
         value: https://lyfgoeson-frontend.onrender.com
 
