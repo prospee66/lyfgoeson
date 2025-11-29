@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaCalendar } from 'react-icons/fa';
+import { FaBell, FaEnvelope, FaSearch, FaUserCircle, FaTimes, FaCalendar, FaBars } from 'react-icons/fa';
 import useAuthStore from '../../store/authStore';
 import { useState, useEffect, useRef } from 'react';
 import { userAPI, eventAPI } from '../../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
-const Header = () => {
+const Header = ({ toggleSidebar }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -103,9 +103,17 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 shadow-lg z-50 h-16">
-      <div className="flex items-center justify-between px-6 h-full">
+      <div className="flex items-center justify-between px-3 sm:px-6 h-full">
+        {/* Mobile menu button */}
+        <button
+          onClick={toggleSidebar}
+          className="lg:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-colors mr-2"
+        >
+          <FaBars className="text-xl" />
+        </button>
+
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3 group">
+        <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
           <div className="relative">
             <img
               src="/assets/glc-logo.png"
@@ -114,13 +122,13 @@ const Header = () => {
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-bold text-white tracking-tight">Global Life Church</span>
-            <span className="text-xs text-blue-100 -mt-1">Connect • Grow • Serve</span>
+            <span className="text-base sm:text-xl font-bold text-white tracking-tight">Global Life Church</span>
+            <span className="text-xs text-blue-100 -mt-1 hidden sm:block">Connect • Grow • Serve</span>
           </div>
         </Link>
 
         {/* Search Bar */}
-        <div className="flex-1 max-w-xl mx-8" ref={searchRef}>
+        <div className="hidden md:flex flex-1 max-w-xl mx-4 lg:mx-8" ref={searchRef}>
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
             <input
@@ -209,27 +217,27 @@ const Header = () => {
         </div>
 
         {/* Right side icons */}
-        <div className="flex items-center space-x-2">
-          <Link to="/messages" className="relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <Link to="/messages" className="hidden sm:flex relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
             <FaEnvelope className="text-xl" />
           </Link>
 
-          <Link to="/notifications" className="relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
+          <Link to="/notifications" className="hidden sm:flex relative p-2.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all">
             <FaBell className="text-xl" />
           </Link>
 
           {/* Profile Dropdown */}
-          <div className="relative ml-2">
+          <div className="relative ml-1 sm:ml-2">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-2 p-1.5 pr-3 rounded-lg hover:bg-white/20 transition-all"
+              className="flex items-center space-x-1 sm:space-x-2 p-1.5 pr-2 sm:pr-3 rounded-lg hover:bg-white/20 transition-all"
             >
               <img
                 src={getProfilePictureUrl()}
                 alt={user?.firstName || 'User'}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-white/50"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-white/50"
               />
-              <span className="font-semibold text-white">{user?.firstName}</span>
+              <span className="hidden sm:inline font-semibold text-white">{user?.firstName}</span>
             </button>
 
             {showProfileMenu && (
