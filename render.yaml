@@ -17,7 +17,7 @@ services:
       - key: JWT_SECRET
         value: a66420d39e24d5cd39dbd04d05aaeba35b2cb14a735941cb1aef712f5a171087
       - key: FRONTEND_URL
-        value: https://placeholder.com
+        value: https://lyfgoeson-frontend.onrender.com
 
   # Frontend (Static Site)
   - type: web
