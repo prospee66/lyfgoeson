@@ -12,7 +12,7 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: MONGO_URI
+      - key: MONGODB_URI
         value: mongodb+srv://churchadmin:9bIthTwct7Zzsvw5@churchapp.habdchf.mongodb.net/churchapp?appName=ChurchApp
       - key: JWT_SECRET
         value: a66420d39e24d5cd39dbd04d05aaeba35b2cb14a735941cb1aef712f5a171087
